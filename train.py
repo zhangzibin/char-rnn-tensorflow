@@ -5,6 +5,7 @@ import argparse
 import time
 import os
 from six.moves import cPickle
+import numpy as np
 
 from utils import TextLoader
 from model import Model
@@ -31,7 +32,7 @@ def main():
                         help='RNN sequence length')
     parser.add_argument('--num_epochs', type=int, default=50,
                         help='number of epochs')
-    parser.add_argument('--save_every', type=int, default=1000,
+    parser.add_argument('--save_every', type=int, default=100,
                         help='save frequency')
     parser.add_argument('--grad_clip', type=float, default=5.,
                         help='clip gradients at this value')
@@ -122,18 +123,35 @@ def train(args):
                 writer.add_summary(summ, e * data_loader.num_batches + b)
 
                 end = time.time()
-                print("{}/{} (epoch {}), train_loss = {:.3f}, time/batch = {:.3f}"
-                      .format(e * data_loader.num_batches + b,
-                              args.num_epochs * data_loader.num_batches,
-                              e, train_loss, end - start))
+                if b % 10 == 0:
+                    print("{}/{} (epoch {}), train_loss = {:.3f}, perlexity = {:.3f}, time/batch = {:.3f}"
+                          .format(e * data_loader.num_batches + b,
+                                  args.num_epochs * data_loader.num_batches,
+                                  e, train_loss, np.exp(train_loss), end - start))
                 if (e * data_loader.num_batches + b) % args.save_every == 0\
                         or (e == args.num_epochs-1 and
                             b == data_loader.num_batches-1):
+
+                    # evaluate on dev set
+                    data_loader.reset_batch_pointer_dev()
+                    dev_state = sess.run(model.initial_state)
+                    total_dev_loss = 0.
+                    for b in range(data_loader.num_batches_dev):
+                        x, y = data_loader.next_batch_dev()
+                        feed = {model.input_data: x, model.targets: y}
+                        for i, (c, h) in enumerate(model.initial_state):
+                            feed[c] = dev_state[i].c
+                            feed[h] = dev_state[i].h
+                        dev_loss, dev_state = sess.run([model.cost, model.final_state], feed)
+                        total_dev_loss += dev_loss
+
                     # save for the last result
                     checkpoint_path = os.path.join(args.save_dir, 'model.ckpt')
                     saver.save(sess, checkpoint_path,
                                global_step=e * data_loader.num_batches + b)
-                    print("model saved to {}".format(checkpoint_path))
+                    dev_loss = total_dev_loss / data_loader.num_batches_dev
+                    print("dev_loss={:.3f}, perlexity = {:.3f}, model saved to {}".format( \
+                            dev_loss, np.exp(dev_loss), checkpoint_path))
 
 
 if __name__ == '__main__':

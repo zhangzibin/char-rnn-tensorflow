@@ -24,6 +24,7 @@ class TextLoader():
             self.load_preprocessed(vocab_file, tensor_file)
         self.create_batches()
         self.reset_batch_pointer()
+        self.reset_batch_pointer_dev()
 
     def preprocess(self, input_file, vocab_file, tensor_file):
         with codecs.open(input_file, "r", encoding=self.encoding) as f:
@@ -61,15 +62,32 @@ class TextLoader():
         ydata = np.copy(self.tensor)
         ydata[:-1] = xdata[1:]
         ydata[-1] = xdata[0]
-        self.x_batches = np.split(xdata.reshape(self.batch_size, -1),
+        all_x_batches = np.split(xdata.reshape(self.batch_size, -1),
                                   self.num_batches, 1)
-        self.y_batches = np.split(ydata.reshape(self.batch_size, -1),
+        all_y_batches = np.split(ydata.reshape(self.batch_size, -1),
                                   self.num_batches, 1)
+
+        split_point = int(len(all_x_batches) * 0.9)
+        self.num_batches = split_point
+        self.num_batches_dev = len(all_x_batches)-split_point
+        print 'Train/Dev split: %d/%d' % (split_point, len(all_x_batches)-split_point)
+
+        self.x_batches, self.x_batches_dev = all_x_batches[:split_point], all_x_batches[split_point:]
+        self.y_batches, self.y_batches_dev = all_y_batches[:split_point], all_y_batches[split_point:]
+
 
     def next_batch(self):
         x, y = self.x_batches[self.pointer], self.y_batches[self.pointer]
         self.pointer += 1
         return x, y
 
+    def next_batch_dev(self):
+        x, y = self.x_batches_dev[self.pointer_dev], self.y_batches_dev[self.pointer_dev]
+        self.pointer_dev += 1
+        return x, y
+
     def reset_batch_pointer(self):
         self.pointer = 0
+
+    def reset_batch_pointer_dev(self):
+        self.pointer_dev = 0
