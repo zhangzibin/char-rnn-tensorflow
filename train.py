@@ -32,7 +32,7 @@ def main():
                         help='RNN sequence length')
     parser.add_argument('--num_epochs', type=int, default=50,
                         help='number of epochs')
-    parser.add_argument('--save_every', type=int, default=100,
+    parser.add_argument('--save_every', type=int, default=1000,
                         help='save frequency')
     parser.add_argument('--grad_clip', type=float, default=5.,
                         help='clip gradients at this value')
