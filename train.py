@@ -92,7 +92,9 @@ def train(args):
 
     model = Model(args)
 
-    with tf.Session() as sess:
+    tf_config = tf.ConfigProto()
+    tf_config.gpu_options.allow_growth = True
+    with tf.Session(config=tf_config) as sess:
         # instrument for tensorboard
         summaries = tf.summary.merge_all()
         writer = tf.summary.FileWriter(

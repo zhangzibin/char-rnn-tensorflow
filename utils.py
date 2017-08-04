@@ -6,11 +6,12 @@ import numpy as np
 
 
 class TextLoader():
-    def __init__(self, data_dir, batch_size, seq_length, encoding='utf-8'):
+    def __init__(self, data_dir, batch_size, seq_length, encoding='utf-8', train_split=0.9):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.seq_length = seq_length
         self.encoding = encoding
+        self.train_split = train_split
 
         input_file = os.path.join(data_dir, "input.txt")
         vocab_file = os.path.join(data_dir, "vocab.pkl")
@@ -67,7 +68,7 @@ class TextLoader():
         all_y_batches = np.split(ydata.reshape(self.batch_size, -1),
                                   self.num_batches, 1)
 
-        split_point = int(len(all_x_batches) * 0.9)
+        split_point = int(len(all_x_batches) * self.train_split)
         self.num_batches = split_point
         self.num_batches_dev = len(all_x_batches)-split_point
         print 'Train/Dev split: %d/%d' % (split_point, len(all_x_batches)-split_point)
