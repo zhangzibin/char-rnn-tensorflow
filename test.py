@@ -1,3 +1,4 @@
+# -*- coding=utf-8 -*-
 from __future__ import print_function
 import tensorflow as tf
 
@@ -27,8 +28,7 @@ def test(args):
     with open(os.path.join(args.save_dir, 'chars_vocab.pkl'), 'rb') as f:
         chars, vocab = cPickle.load(f)
 
-    data_loader = TextLoader(saved_args.data_dir, saved_args.batch_size, saved_args.seq_length, train_split=1.0)
-
+    data_loader = TextLoader(args.data_dir, saved_args.batch_size, saved_args.seq_length, train_split=1.0)
 
     model = Model(saved_args)
     tf_config = tf.ConfigProto()
@@ -49,7 +49,8 @@ def test(args):
                 feed[c] = state[i].c
                 feed[h] = state[i].h
             train_loss, probs, state = sess.run([model.cost, model.probs, model.final_state], feed)
-            print(probs.shape)
+            for char_in,char_out,prob in zip(x[0], y[0], probs):
+                print(chars[char_in].encode('utf-8'), chars[char_out].encode('utf-8'), prob[char_out])
 
 if __name__ == '__main__':
     main()
